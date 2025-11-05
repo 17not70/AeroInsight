@@ -2,9 +2,10 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useAuth } from "../AuthContext"; // <-- This is the corrected line
+import { useAuth } from "../AuthContext";
 import { auth } from "../firebase.config";
 import { useRouter } from "next/navigation";
+import Link from "next/link"; // <-- 1. Import Link
 
 export default function DashboardPage() {
   const { user, appUser, loading } = useAuth();
@@ -30,6 +31,12 @@ export default function DashboardPage() {
       <p>Your email is: {appUser.email}</p>
       <p>Your role is: {appUser.role}</p>
       <br />
+
+      {/* 2. This is the new Link block */}
+      <Link href="/submit-vsr" style={{ color: "cyan", fontSize: "20px", marginRight: "20px" }}>
+        Submit a New VSR
+      </Link>
+
       <button onClick={() => auth.signOut()} style={{ padding: "10px", color: "black" }}>
         Sign Out
       </button>
