@@ -1,7 +1,7 @@
 // app/AuthContext.tsx
 "use client";
 
-import React, { createContext, useContext, useEffect, useState }. from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, firestore } from "./firebase.config";
 import { User } from "firebase/auth";
