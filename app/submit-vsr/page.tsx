@@ -22,12 +22,8 @@ export default function SubmitVSRPage() {
   const [eventDate, setEventDate] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Flight Ops");
-  
-  // --- NEW STATE for Anonymity ---
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [contactEmail, setContactEmail] = useState("");
-  // --- END NEW STATE ---
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -36,7 +32,7 @@ export default function SubmitVSRPage() {
     e.preventDefault();
     setSubmitError(null);
     
-    if (!user) { // This check is a safeguard
+    if (!user) {
       setSubmitError("You must be logged in to submit a report.");
       return;
     }
@@ -44,8 +40,6 @@ export default function SubmitVSRPage() {
     setIsSubmitting(true);
 
     try {
-      // --- NEW LOGIC for Anonymity ---
-      // 1. Create a base report object
       let reportData: any = {
         type: "VSR",
         status: "New",
@@ -53,30 +47,23 @@ export default function SubmitVSRPage() {
         description: description,
         category: category,
         createdAt: serverTimestamp(),
-        isAnonymous: isAnonymous, // Store the user's choice
+        isAnonymous: isAnonymous,
       };
 
-      // 2. Add user info ONLY if not anonymous
       if (isAnonymous) {
         reportData.reporter_id = "anonymous";
         reportData.reporter_email = "anonymous";
       } else {
         reportData.reporter_id = user.uid;
         reportData.reporter_email = user.email;
-        // Only add contact email if they provided one
         if (contactEmail.trim() !== "") {
           reportData.contactEmail = contactEmail.trim();
         }
       }
-      // --- END NEW LOGIC ---
 
-      // 3. Get a reference to the 'reports' collection
       const reportsCollection = collection(firestore, "reports");
-
-      // 4. Add the new document
       await addDoc(reportsCollection, reportData);
 
-      // 5. Success! Redirect to the dashboard
       alert("Report submitted successfully!");
       router.push("/dashboard");
 
@@ -90,35 +77,44 @@ export default function SubmitVSRPage() {
 
   // --- Render Logic ---
   if (loading || !user) {
-    return <div>Loading form...</div>;
+    return <div className="p-10">Loading form...</div>;
   }
 
+  // This layout uses Tailwind classes
   return (
-    <div style={{ padding: "40px", maxWidth: "600px", margin: "auto" }}>
-      <h1>Submit Voluntary Safety Report (VSR)</h1>
-      <p>Logged in as: {appUser?.name} ({appUser?.email})</p>
+    <div className="max-w-2xl p-10 mx-auto">
+      <h1 className="text-3xl font-bold">Submit Voluntary Safety Report (VSR)</h1>
+      <p className="mt-2 text-zinc-400">
+        Logged in as: {appUser?.name} ({appUser?.email})
+      </p>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
         {/* Event Date */}
-        <div style={{ margin: "20px 0" }}>
-          <label>Date of Event</label>
+        <div>
+          <label htmlFor="eventDate" className="block text-sm font-medium">
+            Date of Event
+          </label>
           <input
+            id="eventDate"
             type="date"
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
             required
-            style={{ width: "100%", padding: "8px", background: "#222", border: "1px solid #555" }}
+            className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
           />
         </div>
 
         {/* Category */}
-        <div style={{ margin: "20px 0" }}>
-          <label>Category</label>
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium">
+            Category
+          </label>
           <select
+            id="category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            style={{ width: "100%", padding: "8px", background: "#222", border: "1px solid #555" }}
+            className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
           >
             <option value="Flight Ops">Flight Ops</option>
             <option value="Ground Handling">Ground Handling</option>
@@ -129,61 +125,68 @@ export default function SubmitVSRPage() {
         </div>
 
         {/* Description */}
-        <div style={{ margin: "20px 0" }}>
-          <label>Event Description (What happened?)</label>
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium">
+            Event Description (What happened?)
+          </label>
           <textarea
+            id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
             rows={6}
-            style={{ width: "100%", padding: "8px", fontFamily: "sans-serif", background: "#222", border: "1px solid #555" }}
+            className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700 font-sans"
           />
         </div>
 
-        {/* --- NEW ANONYMITY SECTION --- */}
-        <div style={{ margin: "20px 0", background: "#333", padding: "10px", borderRadius: "8px" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+        {/* Anonymity Section */}
+        <div className="p-4 rounded-lg bg-zinc-100 dark:bg-zinc-800">
+          <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.g.target.checked)}
-              style={{ width: "20px", height: "20px", marginRight: "10px" }}
+              onChange={(e) => setIsAnonymous(e.target.checked)}
+              className="w-5 h-5 mr-3"
             />
             Submit this report anonymously
           </label>
-          <p style={{ fontSize: "12px", color: "#ccc", marginTop: "5px" }}>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
             If checked, your name and email will not be attached to this report.
           </p>
         </div>
 
         {/* Show contact email field ONLY if NOT anonymous */}
         {!isAnonymous && (
-          <div style={{ margin: "20px 0" }}>
-            <label>Contact Email for Updates (Optional)</label>
+          <div>
+            <label htmlFor="contactEmail" className="block text-sm font-medium">
+              Contact Email for Updates (Optional)
+            </label>
             <input
+              id="contactEmail"
               type="email"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
               placeholder="Leave blank to use your login email"
-              style={{ width: "100%", padding: "8px", background: "#222", border: "1px solid #555" }}
+              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
             />
-            <p style={{ fontSize: "12px", color: "#ccc", marginTop: "5px" }}>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
               Provide an email if you want to receive acknowledgement and outcome updates.
             </p>
           </div>
         )}
-        {/* --- END NEW SECTION --- */}
 
         {/* Submit Button */}
-        <button 
-          type="submit" 
-          disabled={isSubmitting}
-          style={{ padding: "10px 20px", cursor: "pointer", background: "blue", color: "white", border: "none" }}
-        >
-          {isSubmitting ? "Submitting..." : "Submit Report"}
-        </button>
+        <div>
+          <button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="px-5 py-3 font-medium text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 disabled:bg-zinc-500"
+          >
+            {isSubmitting ? "Submitting..." : "Submit Report"}
+          </button>
+        </div>
 
-        {submitError && <p style={{ color: "red", marginTop: "10px" }}>{submitError}</p>}
+        {submitError && <p className="mt-2 text-red-500">{submitError}</p>}
       </form>
     </div>
   );
