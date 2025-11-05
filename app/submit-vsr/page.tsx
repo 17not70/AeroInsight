@@ -14,14 +14,20 @@ export default function SubmitVSRPage() {
   // --- Page Protection ---
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      router.push("/login"); // User must be logged in to access this page
     }
   }, [user, loading, router]);
 
   // --- Form State ---
   const [eventDate, setEventDate] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Flight Ops"); // Default value
+  const [category, setCategory] = useState("Flight Ops");
+  
+  // --- NEW STATE for Anonymity ---
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [contactEmail, setContactEmail] = useState("");
+  // --- END NEW STATE ---
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -29,8 +35,8 @@ export default function SubmitVSRPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-
-    if (!user) {
+    
+    if (!user) { // This check is a safeguard
       setSubmitError("You must be logged in to submit a report.");
       return;
     }
@@ -38,25 +44,39 @@ export default function SubmitVSRPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. Create a new report object
-      const newReport = {
+      // --- NEW LOGIC for Anonymity ---
+      // 1. Create a base report object
+      let reportData: any = {
         type: "VSR",
-        reporter_id: user.uid,
-        reporter_email: user.email,
         status: "New",
         eventDate: eventDate,
         description: description,
         category: category,
-        createdAt: serverTimestamp(), // Adds a server-side timestamp
+        createdAt: serverTimestamp(),
+        isAnonymous: isAnonymous, // Store the user's choice
       };
 
-      // 2. Get a reference to the 'reports' collection
+      // 2. Add user info ONLY if not anonymous
+      if (isAnonymous) {
+        reportData.reporter_id = "anonymous";
+        reportData.reporter_email = "anonymous";
+      } else {
+        reportData.reporter_id = user.uid;
+        reportData.reporter_email = user.email;
+        // Only add contact email if they provided one
+        if (contactEmail.trim() !== "") {
+          reportData.contactEmail = contactEmail.trim();
+        }
+      }
+      // --- END NEW LOGIC ---
+
+      // 3. Get a reference to the 'reports' collection
       const reportsCollection = collection(firestore, "reports");
 
-      // 3. Add the new document
-      await addDoc(reportsCollection, newReport);
+      // 4. Add the new document
+      await addDoc(reportsCollection, reportData);
 
-      // 4. Success! Redirect to the dashboard
+      // 5. Success! Redirect to the dashboard
       alert("Report submitted successfully!");
       router.push("/dashboard");
 
@@ -77,7 +97,7 @@ export default function SubmitVSRPage() {
     <div style={{ padding: "40px", maxWidth: "600px", margin: "auto" }}>
       <h1>Submit Voluntary Safety Report (VSR)</h1>
       <p>Logged in as: {appUser?.name} ({appUser?.email})</p>
-
+      
       <form onSubmit={handleSubmit}>
         {/* Event Date */}
         <div style={{ margin: "20px 0" }}>
@@ -87,7 +107,7 @@ export default function SubmitVSRPage() {
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
             required
-            style={{ width: "100%", padding: "8px", color: "black" }}
+            style={{ width: "100%", padding: "8px", background: "#222", border: "1px solid #555" }}
           />
         </div>
 
@@ -98,7 +118,7 @@ export default function SubmitVSRPage() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            style={{ width: "100%", padding: "8px", color: "black" }}
+            style={{ width: "100%", padding: "8px", background: "#222", border: "1px solid #555" }}
           >
             <option value="Flight Ops">Flight Ops</option>
             <option value="Ground Handling">Ground Handling</option>
@@ -116,9 +136,43 @@ export default function SubmitVSRPage() {
             onChange={(e) => setDescription(e.target.value)}
             required
             rows={6}
-            style={{ width: "100%", padding: "8px", color: "black", fontFamily: "sans-serif" }}
+            style={{ width: "100%", padding: "8px", fontFamily: "sans-serif", background: "#222", border: "1px solid #555" }}
           />
         </div>
+
+        {/* --- NEW ANONYMITY SECTION --- */}
+        <div style={{ margin: "20px 0", background: "#333", padding: "10px", borderRadius: "8px" }}>
+          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={isAnonymous}
+              onChange={(e) => setIsAnonymous(e.g.target.checked)}
+              style={{ width: "20px", height: "20px", marginRight: "10px" }}
+            />
+            Submit this report anonymously
+          </label>
+          <p style={{ fontSize: "12px", color: "#ccc", marginTop: "5px" }}>
+            If checked, your name and email will not be attached to this report.
+          </p>
+        </div>
+
+        {/* Show contact email field ONLY if NOT anonymous */}
+        {!isAnonymous && (
+          <div style={{ margin: "20px 0" }}>
+            <label>Contact Email for Updates (Optional)</label>
+            <input
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="Leave blank to use your login email"
+              style={{ width: "100%", padding: "8px", background: "#222", border: "1px solid #555" }}
+            />
+            <p style={{ fontSize: "12px", color: "#ccc", marginTop: "5px" }}>
+              Provide an email if you want to receive acknowledgement and outcome updates.
+            </p>
+          </div>
+        )}
+        {/* --- END NEW SECTION --- */}
 
         {/* Submit Button */}
         <button 
