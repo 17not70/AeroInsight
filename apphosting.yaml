@@ -1,0 +1,17 @@
+# apphosting.yaml
+env:
+  # This loads your API key securely from Secret Manager
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: firebase-api-key
+  
+  # These are your public project identifiers
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "studio-9203015576-3fe6keyp.firebaseapp.com"
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "studio-9203015576-3fe67"
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "studio-9203015576-3fe67.firebasestorage.app"
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "731555012217"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:731555012217:web:fafb41849eb639c391fea8"
