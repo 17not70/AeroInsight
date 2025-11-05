@@ -3,7 +3,7 @@ env:
   # This loads your API key securely from Secret Manager
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: firebase-api-key
-  
+
   # These are your public project identifiers
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
     value: "studio-9203015576-3fe6keyp.firebaseapp.com"
