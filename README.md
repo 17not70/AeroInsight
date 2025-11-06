@@ -39,3 +39,4 @@ This project is being built iteratively, one milestone at a time.
 * [ ] **Milestone 6: AI Features & Polish**
     * **Status:** *Pending*
     * **Result:** Integration with Genkit/Gemini for smart recommendations and a full UI/UX polish.
+      
