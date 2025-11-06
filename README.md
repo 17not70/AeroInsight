@@ -14,23 +14,27 @@ This project is being built iteratively, one milestone at a time.
 
 * [x] **Milestone 1: Authentication & User Roles**
     * **Status:** ✅ **Complete**
-    * **Result:** A fully functional login system with protected routes and Firestore-based user roles.
+    * **Result:** A fully functional login system with protected routes and Firestore-based Admin user roles.
 
-* [ ] **Milestone 2: VSR Submission Form**
-    * **Status:** ⏳ **In Progress**
-    * **Result:** A form for logged-in users to submit a Voluntary Safety Report (VSR) to the database.
+* [x] **Milestone 2: VSR Submission Form**
+    * **Status:** ✅ **Complete** (Functionality Only)
+    * **Result:** Clean, dark-mode friendly VSR form with anonymous submission option, aligned to ICAO reporting categories.
 
-* [ ] **Milestone 3: The Dashboard & Risk Engine**
-    * **Status:** *Pending*
-    * **Result:** A dashboard to view reports with automated risk-index calculation.
+* [x] **Milestone 3 (Part A): Risk Engine (Automated)**
+    * **Status:** ⏳ **Deploying**
+    * **Goal:** Automate initial risk assignment (Extreme Risk, 5E) upon report creation for mandatory Safety Officer review.
+
+* [ ] **Milestone 3 (Part B): Safety Dashboard**
+    * **Status:** *Next Up*
+    * **Goal:** Display reports in a live table format with status and risk data for authorized personnel.
 
 * [ ] **Milestone 4: Corrective Action Tracking**
     * **Status:** *Pending*
-    * **Result:** A system for Safety Officers to assign and track corrective actions for each report.
+    * **Goal:** Build the "Report Details" page to assign/track corrective actions (Status, Department, Due Date).
 
 * [ ] **Milestone 5: MOR Form & Admin Panel**
     * **Status:** *Pending*
-    * **Result:** A second form for MORs and an admin panel for user management.
+    * **Goal:** Add the second report type (MOR) and administrative functions.
 
 * [ ] **Milestone 6: AI Features & Polish**
     * **Status:** *Pending*
