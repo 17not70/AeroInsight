@@ -1,47 +1,45 @@
+// functions/src/index.ts
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {logger} from "firebase-functions";
 import * as admin from "firebase-admin";
 
+// Initialize the Firebase Admin SDK
 admin.initializeApp();
 
 /**
- * Cloud Function: calculateinitialrisk (v2)
+ * Cloud Function: calculateinitialrisk (v3 - Simple Flag)
  * Triggers whenever a new report is created in the 'reports' collection.
- * Default assigns "Extreme (5E)" risk for immediate review.
+ * Logic: Assigns Extreme Risk (5E) by default to ensure immediate review.
+ * NOTE: The AI analysis will be done by a separate function (Milestone 6).
  */
 export const calculateinitialrisk = onDocumentCreated(
   "reports/{reportId}",
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
-      logger.warn("No data found in event payload.");
+      logger.log("No data found in event payload.");
       return;
     }
 
-    const data = snapshot.data();
-    if (data?.severity || data?.probability) {
-      logger.info(
-        `Report ${snapshot.id} already contains risk data. Skipping.`
-      );
-      return;
-    }
-
+    // Assign the highest risk level to flag for immediate review
     const updateData = {
-      severity: 5, // Catastrophic
-      probability: "E", // Frequent
-      riskScore: "5E", // Highest possible risk
-      riskLevel: "Extreme",
-      reviewRequired: true,
+      severity: 5,        // Catastrophic
+      probability: "E",   // Frequent
+      riskScore: "5E",    // Highest possible risk score
+      riskLevel: "Extreme", // Highest possible risk level
       dateSubmitted: admin.firestore.FieldValue.serverTimestamp(),
     };
 
     try {
       await snapshot.ref.update(updateData);
-      logger.info(
-        `Report ${snapshot.id}: Default Extreme Risk (5E) assigned.`
+      logger.log(
+        `Assigned Extreme Risk (5E) to new report ${snapshot.id}.`,
       );
     } catch (error) {
-      logger.error(`Error updating report ${snapshot.id}:`, error);
+      logger.error(
+        `Error updating report ${snapshot.id} with initial risk:`,
+        error,
+      );
     }
-  }
+  },
 );
