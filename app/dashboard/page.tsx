@@ -68,7 +68,7 @@ export default function DashboardPage() {
   const [reportsSnapshot, reportsLoading, reportsError] = useCollection(reportsQuery);
   const reports: Report[] = (reportsSnapshot?.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report)) || []);
 
-  // --- Render Logic ---
+  // --- Render Logic (Combined Loading/Error States) ---
   if (loading || reportsLoading || !user || !appUser) {
     return <div className="p-10 text-white dark:text-zinc-300">Loading AeroInsight Dashboard...</div>;
   }
