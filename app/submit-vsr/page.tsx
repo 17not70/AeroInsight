@@ -14,14 +14,14 @@ export default function SubmitVSRPage() {
   // --- Page Protection ---
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login"); // User must be logged in to access this page
+      router.push("/login");
     }
   }, [user, loading, router]);
 
   // --- Form State ---
   const [eventDate, setEventDate] = useState("");
+  const [category, setCategory] = useState("Flight Operations");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Flight Ops");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [contactEmail, setContactEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +48,8 @@ export default function SubmitVSRPage() {
         category: category,
         createdAt: serverTimestamp(),
         isAnonymous: isAnonymous,
+        
+        // **IMPORTANT:** We are NOT sending severity/probability from the form.
       };
 
       if (isAnonymous) {
@@ -64,7 +66,7 @@ export default function SubmitVSRPage() {
       const reportsCollection = collection(firestore, "reports");
       await addDoc(reportsCollection, reportData);
 
-      alert("Report submitted successfully!");
+      alert("Report submitted successfully! It is now queued for safety review.");
       router.push("/dashboard");
 
     } catch (error: any) {
@@ -80,7 +82,6 @@ export default function SubmitVSRPage() {
     return <div className="p-10">Loading form...</div>;
   }
 
-  // This layout uses Tailwind classes
   return (
     <div className="max-w-2xl p-10 mx-auto">
       <h1 className="text-3xl font-bold">Submit Voluntary Safety Report (VSR)</h1>
@@ -89,57 +90,67 @@ export default function SubmitVSRPage() {
       </p>
       
       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        {/* Event Date */}
-        <div>
-          <label htmlFor="eventDate" className="block text-sm font-medium">
-            Date of Event
-          </label>
-          <input
-            id="eventDate"
-            type="date"
-            value={eventDate}
-            onChange={(e) => setEventDate(e.target.value)}
-            required
-            className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
-          />
+        {/* --- FORM SECTION 1: Event Details (Reporter's ONLY job) --- */}
+        <div className="p-4 rounded-lg bg-zinc-100 dark:bg-zinc-800 space-y-6">
+          <h2 className="text-xl font-semibold">Event Details</h2>
+          {/* Event Date */}
+          <div>
+            <label htmlFor="eventDate" className="block text-sm font-medium">
+              Date of Event
+            </label>
+            <input
+              id="eventDate"
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              required
+              style={{ colorScheme: "dark" }}
+              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium">
+              Category
+            </label>
+            <select
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
+            >
+              <option value="Flight Operations">Flight Operations</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Ground Handling">Ground Handling</option>
+              <option value="Cabin Safety">Cabin Safety</option>
+              <option value="Air Traffic Services">Air Traffic Services</option>
+              <option value="Aerodrome / Airport Facilities">Aerodrome / Airport Facilities</option>
+              <option value="Dangerous Goods">Dangerous Goods</option>
+              <option value="Security (AVSEC)">Security (AVSEC)</option>
+              <option value="Organization / Human Factors">Organization / Human Factors</option>
+              <option value="Other / Near Miss">Other / Near Miss</option>
+            </select>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium">
+              Event Description (What happened?)
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+              rows={6}
+              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700 font-sans"
+            />
+          </div>
         </div>
 
-        {/* Category */}
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium">
-            Category
-          </label>
-          <select
-            id="category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-            className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
-          >
-            <option value="Flight Ops">Flight Ops</option>
-            <option value="Ground Handling">Ground Handling</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Cabin Safety">Cabin Safety</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium">
-            Event Description (What happened?)
-          </label>
-          <textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            rows={6}
-            className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700 font-sans"
-          />
-        </div>
-
-        {/* Anonymity Section */}
+        {/* --- FORM SECTION 2: Anonymity (No risk fields here) --- */}
         <div className="p-4 rounded-lg bg-zinc-100 dark:bg-zinc-800">
           <label className="flex items-center cursor-pointer">
             <input
