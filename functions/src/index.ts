@@ -1,5 +1,5 @@
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { logger } from "firebase-functions";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {logger} from "firebase-functions";
 import * as admin from "firebase-admin";
 
 admin.initializeApp();
