@@ -2,11 +2,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+// Import paths updated to use aliases if available, or direct paths
 import { useAuth } from "@/app/AuthContext"; 
 import { firestore } from "@/app/firebase.config"; 
-import { doc, getDoc, updateDoc, DocumentData } from "firebase/firestore";
+import { doc, getDoc, DocumentData } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+// NOTE: PageProps are the standard props passed to a Next.js App Router Page.
+// We are correcting the type definition here.
+interface PageProps {
+    params: { id: string };
+    searchParams?: { [key: string]: string | string[] | undefined };
+}
 
 interface Report extends DocumentData {
     id: string;
@@ -18,16 +26,13 @@ interface Report extends DocumentData {
     riskScore: string;
     status: string;
     reporter_email: string;
-    reviewerNotes?: string; // New field for review notes
-    reviewerName?: string; // New field to track who reviewed it
+    reviewerNotes?: string;
+    reviewerName?: string;
+    reporter_id?: string; // Added to fix the M4 access check logic
 }
 
-interface ReportPageProps {
-    params: { id: string };
-}
-
-// Helper functions (retained)
 const getStatusColor = (status: string) => {
+    // ... (rest of the helper function remains the same)
     switch (status) {
         case "New": return "bg-red-500";
         case "In Review": return "bg-yellow-500";
@@ -36,21 +41,21 @@ const getStatusColor = (status: string) => {
     }
 };
 
-export default function ReportDetailPage({ params }: ReportPageProps) {
+// 🔑 FIX: Change function signature to use the correct PageProps type
+export default function ReportDetailPage({ params }: PageProps) { 
     const { user, appUser, loading: authLoading } = useAuth();
     const router = useRouter();
-    const reportId = params.id;
+    const reportId = params.id; // Correctly pull the ID from the correctly typed params
 
     const [report, setReport] = useState<Report | null>(null);
     const [pageLoading, setPageLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Form State for Admin Actions
+    // Form State for Admin Actions (Retaining M5 setup)
     const [status, setStatus] = useState<string>('');
     const [reviewerNotes, setReviewerNotes] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitMessage, setSubmitMessage] = useState<string | null>(null);
-
 
     const isAdmin = appUser?.role === "Admin" || appUser?.role === "Safety Officer";
 
@@ -95,7 +100,7 @@ export default function ReportDetailPage({ params }: ReportPageProps) {
         }
     }, [user, authLoading, reportId, router, isAdmin]);
 
-    // --- Admin Update Handler (M5 Core) ---
+    // --- Admin Update Handler (M5 Core - Placeholder for now) ---
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         // Client-side guard: Only Admins can proceed
@@ -105,7 +110,7 @@ export default function ReportDetailPage({ params }: ReportPageProps) {
         setSubmitMessage(null);
 
         try {
-            // This direct write REQUIRES robust Firestore Security Rules (M5 Part B)
+            // This direct write REQUIRES robust Firestore Security Rules (Already done in M5 deployment)
             await updateDoc(doc(firestore, "reports", reportId), {
                 status: status,
                 reviewerNotes: reviewerNotes,
@@ -116,7 +121,6 @@ export default function ReportDetailPage({ params }: ReportPageProps) {
             // Refresh UI state with new data
             setReport(prev => prev ? { ...prev, status, reviewerNotes } : null);
 
-            setSubmissionStatus("success");
             setSubmitMessage("Report updated successfully!");
         } catch (e) {
             console.error("Error updating document:", e);
@@ -127,6 +131,8 @@ export default function ReportDetailPage({ params }: ReportPageProps) {
         }
     };
 
+    // --- Render Logic (Retained M5 UI) ---
+    // ... (rest of the rendering logic remains the same, including the form UI)
 
     if (authLoading || pageLoading) {
         return <div className="p-10 text-white dark:text-zinc-300">Loading Report Details...</div>;
@@ -165,12 +171,12 @@ export default function ReportDetailPage({ params }: ReportPageProps) {
                             <p><strong>Risk:</strong> {report.riskScore} ({report.riskLevel})</p>
                             <p className="col-span-2 pt-4"><strong>Description:</strong></p>
                             <p className="col-span-2 whitespace-pre-wrap text-zinc-300">
-                                {report.description || "No detailed description provided."}
+                                {report.description || "No detailed description was provided for this report."}
                             </p>
                         </div>
                     </div>
                     
-                    {/* Display Reviewer Notes if available AND user is NOT Admin (Admins see it in the form) */}
+                    {/* Display Reviewer Notes if available AND user is NOT Admin */}
                     {!isAdmin && report.reviewerNotes && (
                          <div className="bg-zinc-800 p-6 rounded-lg shadow-xl border-t-4 border-yellow-500">
                              <h2 className="text-xl font-semibold mb-3 text-yellow-300">Reviewer Feedback ({report.reviewerName})</h2>
@@ -228,7 +234,7 @@ export default function ReportDetailPage({ params }: ReportPageProps) {
                             </button>
                             
                             {submitMessage && (
-                                <p className={`text-center text-sm p-2 rounded ${submitMessage.startsWith('Error') ? 'bg-red-400 text-red-900' : 'bg-green-400 text-green-900'}`}>
+                                <p className={`text-center text-sm p-2 rounded ${submitMessage?.startsWith('Error') ? 'bg-red-400 text-red-900' : 'bg-green-400 text-green-900'}`}>
                                     {submitMessage}
                                 </p>
                             )}
