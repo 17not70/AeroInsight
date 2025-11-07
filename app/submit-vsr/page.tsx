@@ -1,203 +1,208 @@
 // app/submit-vsr/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../AuthContext";
-import { auth, firestore } from "../firebase.config";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import Link from "next/link";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { firestore } from "../firebase.config"; // Ensure correct path
+import { useAuth } from "../AuthContext"; // Ensure correct path
+
+// Define the required fields for the VSR form submission
+interface VSRData {
+  eventDate: string;
+  category: string;
+  description: string;
+  isAnonymous: boolean;
+}
 
 export default function SubmitVSRPage() {
-  const { user, appUser, loading } = useAuth();
+  const { user, appUser, loading: authLoading } = useAuth();
   const router = useRouter();
 
+  const [formData, setFormData] = useState<VSRData>({
+    eventDate: "",
+    category: "",
+    description: "",
+    isAnonymous: false,
+  });
+  const [submissionStatus, setSubmissionStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   // --- Page Protection ---
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
-
-  // --- Form State ---
-  const [eventDate, setEventDate] = useState("");
-  const [category, setCategory] = useState("Flight Operations");
-  const [description, setDescription] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [contactEmail, setContactEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // --- Submit Handler ---
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
-    
-    if (!user) {
-      setSubmitError("You must be logged in to submit a report.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      let reportData: any = {
-        type: "VSR",
-        status: "New",
-        eventDate: eventDate,
-        description: description,
-        category: category,
-        createdAt: serverTimestamp(),
-        isAnonymous: isAnonymous,
-        
-        // **IMPORTANT:** We are NOT sending severity/probability from the form.
-      };
-
-      if (isAnonymous) {
-        reportData.reporter_id = "anonymous";
-        reportData.reporter_email = "anonymous";
-      } else {
-        reportData.reporter_id = user.uid;
-        reportData.reporter_email = user.email;
-        if (contactEmail.trim() !== "") {
-          reportData.contactEmail = contactEmail.trim();
-        }
-      }
-
-      const reportsCollection = collection(firestore, "reports");
-      await addDoc(reportsCollection, reportData);
-
-      alert("Report submitted successfully! It is now queued for safety review.");
-      router.push("/dashboard");
-
-    } catch (error: any) {
-      console.error("Error submitting report:", error);
-      setSubmitError(`Failed to submit report. ${error.message}`);
-    }
-
-    setIsSubmitting(false);
-  };
-
-  // --- Render Logic ---
-  if (loading || !user) {
-    return <div className="p-10">Loading form...</div>;
+  if (!authLoading && !user) {
+    router.push("/login");
+    return <p className="p-10 text-white">Redirecting to login...</p>;
+  }
+  
+  if (authLoading) {
+    return <p className="p-10 text-white">Loading user session...</p>;
   }
 
-  return (
-    <div className="max-w-2xl p-10 mx-auto">
-      <h1 className="text-3xl font-bold">Submit Voluntary Safety Report (VSR)</h1>
-      <p className="mt-2 text-zinc-400">
-        Logged in as: {appUser?.name} ({appUser?.email})
-      </p>
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    // Special handling for checkbox
+    const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    
+    setFormData((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmissionStatus("loading");
+    setErrorMessage(null);
+
+    // Initial data structure for Firestore
+    const newReport = {
+      ...formData,
+      // Reporter details linked to the authenticated user
+      reporter_id: user?.uid,
+      reporter_email: formData.isAnonymous ? "Anonymous" : appUser?.email || user?.email || "Unknown",
+      // Initial state fields
+      status: "New", 
+      dateSubmitted: serverTimestamp(),
+      // Initial risk values are TBD, to be overwritten by the deployed Cloud Function
+      riskScore: "TBD",
+      riskLevel: "TBD",
+      type: "VSR", // Define report type
+    };
+
+    try {
+      // Core Firestore Write Operation
+      // This is allowed by the Milestone 5 security rules (allow create: if request.auth != null)
+      await addDoc(collection(firestore, "reports"), newReport);
+
+      setSubmissionStatus("success");
+      setFormData({
+        eventDate: "",
+        category: "",
+        description: "",
+        isAnonymous: false,
+      }); // Clear form
       
+      // Redirect back to dashboard after a delay
+      setTimeout(() => router.push('/dashboard'), 2000);
+      
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      setSubmissionStatus("error");
+      // The M5 security rules prevent unauthorized *updates*, but report creation is open.
+      setErrorMessage("Failed to submit report. Please check the form data or network connection.");
+    }
+  };
+
+  const isFormDisabled = submissionStatus === 'loading';
+
+  return (
+    <div className="p-10 max-w-xl mx-auto dark:bg-black min-h-screen text-white">
+      <Link href="/dashboard" className="text-blue-400 hover:text-blue-300 mb-6 block w-fit">
+        &larr; Back to Dashboard
+      </Link>
+      <header className="pb-4 border-b border-zinc-700">
+        <h1 className="text-3xl font-bold">Submit Voluntary Safety Report (VSR)</h1>
+        <p className="text-sm text-zinc-400 mt-1">
+          Submitting as: **{formData.isAnonymous ? 'Anonymous' : appUser?.name || user?.email}**
+        </p>
+      </header>
+
       <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        {/* --- FORM SECTION 1: Event Details (Reporter's ONLY job) --- */}
-        <div className="p-4 rounded-lg bg-zinc-100 dark:bg-zinc-800 space-y-6">
-          <h2 className="text-xl font-semibold">Event Details</h2>
-          {/* Event Date */}
-          <div>
-            <label htmlFor="eventDate" className="block text-sm font-medium">
-              Date of Event
-            </label>
-            <input
-              id="eventDate"
-              type="date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              required
-              style={{ colorScheme: "dark" }}
-              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium">
-              Category
-            </label>
-            <select
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              required
-              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
-            >
-              <option value="Flight Operations">Flight Operations</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Ground Handling">Ground Handling</option>
-              <option value="Cabin Safety">Cabin Safety</option>
-              <option value="Air Traffic Services">Air Traffic Services</option>
-              <option value="Aerodrome / Airport Facilities">Aerodrome / Airport Facilities</option>
-              <option value="Dangerous Goods">Dangerous Goods</option>
-              <option value="Security (AVSEC)">Security (AVSEC)</option>
-              <option value="Organization / Human Factors">Organization / Human Factors</option>
-              <option value="Other / Near Miss">Other / Near Miss</option>
-            </select>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium">
-              Event Description (What happened?)
-            </label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              rows={6}
-              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700 font-sans"
-            />
-          </div>
-        </div>
-
-        {/* --- FORM SECTION 2: Anonymity (No risk fields here) --- */}
-        <div className="p-4 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-          <label className="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-5 h-5 mr-3"
-            />
-            Submit this report anonymously
-          </label>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            If checked, your name and email will not be attached to this report.
-          </p>
-        </div>
-
-        {/* Show contact email field ONLY if NOT anonymous */}
-        {!isAnonymous && (
-          <div>
-            <label htmlFor="contactEmail" className="block text-sm font-medium">
-              Contact Email for Updates (Optional)
-            </label>
-            <input
-              id="contactEmail"
-              type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="Leave blank to use your login email"
-              className="w-full p-2 mt-1 text-black bg-white border border-zinc-300 rounded-md dark:bg-zinc-800 dark:text-white dark:border-zinc-700"
-            />
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Provide an email if you want to receive acknowledgement and outcome updates.
-            </p>
-          </div>
-        )}
-
-        {/* Submit Button */}
+        {/* Event Date */}
         <div>
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            className="px-5 py-3 font-medium text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 disabled:bg-zinc-500"
-          >
-            {isSubmitting ? "Submitting..." : "Submit Report"}
-          </button>
+          <label htmlFor="eventDate" className="block text-sm font-medium text-zinc-400 mb-1">
+            Date of Event/Observation *
+          </label>
+          <input
+            id="eventDate"
+            name="eventDate"
+            type="date"
+            value={formData.eventDate}
+            onChange={handleChange}
+            required
+            disabled={isFormDisabled}
+            className="w-full bg-zinc-700 border border-zinc-600 rounded-md text-white p-2 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
 
-        {submitError && <p className="mt-2 text-red-500">{submitError}</p>}
+        {/* Category */}
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium text-zinc-400 mb-1">
+            Category of Occurrence *
+          </label>
+          <select
+            id="category"
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            required
+            disabled={isFormDisabled}
+            className="w-full bg-zinc-700 border border-zinc-600 rounded-md text-white p-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="" disabled>Select a category</option>
+            <option value="Flight Ops">Flight Operations</option>
+            <option value="Ground Ops">Ground Operations</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="ATC/Weather">ATC/Weather</option>
+            {/* Add more categories as needed */}
+          </select>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-zinc-400 mb-1">
+            Detailed Description of Event *
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            rows={6}
+            value={formData.description}
+            onChange={handleChange}
+            required
+            disabled={isFormDisabled}
+            placeholder="What happened, where, and when? Include severity details if known."
+            className="w-full bg-zinc-700 border border-zinc-600 rounded-md text-white p-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        
+        {/* Anonymous Checkbox */}
+        <div className="flex items-center">
+            <input
+                id="isAnonymous"
+                name="isAnonymous"
+                type="checkbox"
+                checked={formData.isAnonymous}
+                onChange={handleChange}
+                disabled={isFormDisabled}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="isAnonymous" className="ml-2 text-sm text-zinc-400">
+                Submit this report **Anonymously**
+            </label>
+        </div>
+
+        {/* Submission Button and Feedback */}
+        <button
+          type="submit"
+          disabled={isFormDisabled}
+          className="w-full py-2 px-4 bg-blue-600 rounded-md font-semibold hover:bg-blue-700 transition duration-150 disabled:bg-blue-900 disabled:cursor-not-allowed"
+        >
+          {submissionStatus === "loading"
+            ? "Submitting Report..."
+            : submissionStatus === "success"
+            ? "Submission Complete! Redirecting..."
+            : "Submit VSR"}
+        </button>
+
+        {errorMessage && (
+          <p className="text-center text-sm p-2 bg-red-400 text-red-900 rounded">{errorMessage}</p>
+        )}
       </form>
     </div>
   );

@@ -1,0 +1,24 @@
+[33mc2d693f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Milestone 3: FIX - Exclude functions folder from Next.js build
+[33mfe3643b[m Milestone 3 (Part B): FIX - Final clean push to resolve merge conflicts
+[33med06503[m Milestone 3 (Part B): FIX - Finalize dashboard table logic
+[33mc62855b[m Milestone 3 (Part B): Deploy live safety dashboard
+[33m44199fa[m Update README.md
+[33m6acfcf1[m Milestone 3: Final risk engine lint fix
+[33m1e64f0f[m Milestone 3: Final risk engine lint fix
+[33me3b886e[m Milestone 3: FIX - Deploy unified naming for risk fields
+[33mb8a3b54[m Milestone 3: FIX - Deploy unified naming for risk fields
+[33m4e41911[m Fix: Refactor VSR form with Tailwind for dark mode
+[33m511cfe3[m Fix: Correct input text color for dark mode
+[33mfcbba99[m Fix: Correct input text color for dark mode
+[33m2431522[m Update README.md
+[33mb8a1400[m Milestone 2: Add VSR submission form
+[33m8dea1d5[m Milestone 1: FIX - Update layout.tsx and page.tsx
+[33m899d6d2[m Fix: Correct typo in AUTH_DOMAIN
+[33mb765ff5[m Trigger build: Final permissions fix for Cloud Build SA
+[33m425f6a1[m Trigger build: Re-try fetching secrets
+[33m330eb32[m Fix: Add apphosting.yaml and secure keys
+[33md9c2c77[m Fix: Move API keys to environment variables
+[33m8d5237f[m Fix: Correct import paths for AuthContext
+[33m27fe2cc[m Fix: Remove syntax error in AuthContext
+[33m43f4cf5[m Milestone 1: Add Auth and Dashboard
+[33m43c3f98[m Milestone 0: Initial project setup
